@@ -7,7 +7,7 @@ app.use(express.json());
 
 const client = new Client({
     user: process.env.DB_USER,
-    host: "db",
+    host: process.env.DB_HOST || "db",
     database: process.env.DB_NAME,
     password: process.env.DB_PASSWORD,
     port: Number(process.env.DB_PORT),
