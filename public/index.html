@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Orchestrator Core - System Terminal Interface">
+    <title>ORCHESTRATOR // TERMINAL</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --terminal-green: #00FF00;
+            --terminal-green-dim: rgba(0, 255, 0, 0.6);
+            --terminal-green-glow: rgba(0, 255, 0, 0.3);
+            --bg-dark: #0a0a0f;
+            --glass-bg: rgba(10, 10, 15, 0.75);
+            --border-glow: rgba(0, 255, 0, 0.3);
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background-color: var(--bg-dark);
+            color: var(--terminal-green);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Animated Grid Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(var(--terminal-green-glow) 1px, transparent 1px),
+                linear-gradient(90deg, var(--terminal-green-glow) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridPulse 4s ease-in-out infinite;
+            z-index: -1;
+        }
+
+        @keyframes gridPulse {
+
+            0%,
+            100% {
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 0.6;
+            }
+        }
+
+        /* Glassmorphism Terminal Container */
+        .terminal-container {
+            width: 80vw;
+            height: 80vh;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-glow);
+            border-radius: 8px;
+            box-shadow:
+                0 0 40px rgba(0, 255, 0, 0.1),
+                inset 0 0 60px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Terminal Header */
+        .terminal-header {
+            padding: 12px 20px;
+            background: rgba(0, 255, 0, 0.05);
+            border-bottom: 1px solid var(--border-glow);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .terminal-title {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .window-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .window-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            opacity: 0.8;
+        }
+
+        .window-dot.red {
+            background: #ff5f56;
+        }
+
+        .window-dot.yellow {
+            background: #ffbd2e;
+        }
+
+        .window-dot.green {
+            background: #27c93f;
+        }
+
+        /* Terminal Body */
+        .terminal-body {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        .terminal-line {
+            line-height: 1.8;
+            font-size: 14px;
+            opacity: 0;
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+
+        .prompt {
+            color: var(--terminal-green-dim);
+        }
+
+        .success {
+            color: #27c93f;
+        }
+
+        .warning {
+            color: #ffbd2e;
+        }
+
+        .error {
+            color: #ff5f56;
+            animation: blink 0.5s step-end infinite;
+        }
+
+        @keyframes blink {
+            50% {
+                opacity: 0;
+            }
+        }
+
+        /* System Metrics Panel */
+        .system-metrics {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 255, 0, 0.03);
+            border: 1px solid var(--border-glow);
+            border-radius: 4px;
+        }
+
+        .metrics-header {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            color: var(--terminal-green);
+            text-transform: uppercase;
+        }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(0, 255, 0, 0.1);
+        }
+
+        .metric-row:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            color: var(--terminal-green-dim);
+        }
+
+        .metric-value {
+            color: var(--terminal-green);
+            font-weight: 700;
+        }
+
+        .metric-value.online {
+            color: #27c93f;
+        }
+
+        .metric-value.error {
+            color: #ff5f56;
+        }
+
+        /* Cursor blink */
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 18px;
+            background: var(--terminal-green);
+            margin-left: 5px;
+            animation: cursorBlink 1s step-end infinite;
+            vertical-align: text-bottom;
+        }
+
+        @keyframes cursorBlink {
+            50% {
+                opacity: 0;
+            }
+        }
+
+        /* Scrollbar styling */
+        .terminal-body::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .terminal-body::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .terminal-body::-webkit-scrollbar-thumb {
+            background: var(--terminal-green-glow);
+            border-radius: 4px;
+        }
+
+        .terminal-body::-webkit-scrollbar-thumb:hover {
+            background: var(--terminal-green-dim);
+        }
+
+        /* Command Input */
+        .command-input-container {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            background: rgba(0, 255, 0, 0.03);
+            border-top: 1px solid var(--border-glow);
+        }
+
+        .command-prompt {
+            color: var(--terminal-green);
+            font-weight: 700;
+            margin-right: 10px;
+            font-size: 14px;
+        }
+
+        .command-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--terminal-green);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            caret-color: var(--terminal-green);
+        }
+
+        .command-input::placeholder {
+            color: var(--terminal-green-dim);
+            opacity: 0.5;
+        }
+
+        /* Multi-line response */
+        .terminal-line.multiline {
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="terminal-container">
+        <div class="terminal-header">
+            <span class="terminal-title">⬡ ORCHESTRATOR // CORE TERMINAL</span>
+            <div class="window-controls">
+                <div class="window-dot red"></div>
+                <div class="window-dot yellow"></div>
+                <div class="window-dot green"></div>
+            </div>
+        </div>
+        <div class="terminal-body" id="terminal">
+            <!-- Boot sequence will be injected here -->
+        </div>
+        <div class="command-input-container">
+            <span class="command-prompt">root@orchestrator:~$</span>
+            <input type="text" class="command-input" id="commandInput" placeholder="Type a command... (try 'help')"
+                autocomplete="off" spellcheck="false">
+        </div>
+    </div>
+
+    <script>
+        const terminal = document.getElementById('terminal');
+
+        const bootSequence = [
+            { text: '> BOOTING ORCHESTRATOR CORE v1.0.0...', delay: 300 },
+            { text: '> INITIALIZING KERNEL MODULES...', delay: 400 },
+            { text: '> INJECTING RENDER_SERVICE_CREDENTIALS...', delay: 500 },
+            { text: '> HANDSHAKING WITH POSTGRES 18...', delay: 600 },
+            { text: '> SSL/TLS ENCRYPTION ACTIVE.', delay: 400, class: 'success' },
+            { text: '> ESTABLISHING SECURE CHANNEL...', delay: 500 },
+            { text: '> CONNECTION VALIDATED ✓', delay: 300, class: 'success' },
+            { text: '> SYSTEM READY.', delay: 200, class: 'success' },
+        ];
+
+        function printLine(text, className = '') {
+            const line = document.createElement('div');
+            line.className = `terminal-line ${className}`;
+            line.textContent = text;
+            terminal.appendChild(line);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function createMetricsPanel() {
+            const panel = document.createElement('div');
+            panel.className = 'system-metrics';
+            panel.id = 'system-metrics';
+            panel.innerHTML = `
+                <div class="metrics-header">[ SYSTEM_METRICS ]</div>
+                <div class="metric-row">
+                    <span class="metric-label">STATUS:</span>
+                    <span class="metric-value" id="metric-status">INITIALIZING...</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">DATABASE:</span>
+                    <span class="metric-value" id="metric-database">---</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">LATENCY:</span>
+                    <span class="metric-value" id="metric-latency">---</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">SERVER_TIME:</span>
+                    <span class="metric-value" id="metric-time">---</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">VERSION:</span>
+                    <span class="metric-value" id="metric-version">---</span>
+                </div>
+            `;
+            terminal.appendChild(panel);
+        }
+
+        function updateMetrics(data) {
+            const statusEl = document.getElementById('metric-status');
+            const dbEl = document.getElementById('metric-database');
+            const latencyEl = document.getElementById('metric-latency');
+            const timeEl = document.getElementById('metric-time');
+            const versionEl = document.getElementById('metric-version');
+
+            if (data.status === 'online') {
+                statusEl.textContent = 'ONLINE';
+                statusEl.className = 'metric-value online';
+                dbEl.textContent = data.database.toUpperCase();
+                dbEl.className = 'metric-value online';
+                latencyEl.textContent = data.latency.toUpperCase();
+                timeEl.textContent = new Date(data.serverTime).toISOString();
+                versionEl.textContent = data.version;
+            } else {
+                statusEl.textContent = 'ERROR';
+                statusEl.className = 'metric-value error';
+                dbEl.textContent = 'UNREACHABLE';
+                dbEl.className = 'metric-value error';
+            }
+        }
+
+        function showCriticalError() {
+            const existingError = document.querySelector('.critical-error');
+            if (existingError) existingError.remove();
+
+            printLine('[CRITICAL: SIGNAL LOST] - Connection to /api/status failed', 'error');
+
+            const statusEl = document.getElementById('metric-status');
+            const dbEl = document.getElementById('metric-database');
+            if (statusEl) {
+                statusEl.textContent = 'SIGNAL LOST';
+                statusEl.className = 'metric-value error';
+            }
+            if (dbEl) {
+                dbEl.textContent = 'UNREACHABLE';
+                dbEl.className = 'metric-value error';
+            }
+        }
+
+        async function fetchStatus() {
+            try {
+                const response = await fetch('/api/status');
+                if (!response.ok) throw new Error('API Error');
+                const data = await response.json();
+                updateMetrics(data);
+                printLine(`> HEARTBEAT OK @ ${new Date().toLocaleTimeString()}`, 'success');
+            } catch (error) {
+                showCriticalError();
+            }
+        }
+
+        async function runBootSequence() {
+            for (const step of bootSequence) {
+                await new Promise(resolve => setTimeout(resolve, step.delay));
+                printLine(step.text, step.class || '');
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 500));
+            printLine('');
+            createMetricsPanel();
+
+            // Initial fetch
+            await fetchStatus();
+
+            // Poll every 10 seconds
+            setInterval(fetchStatus, 10000);
+        }
+
+        // Start boot sequence on load
+        window.addEventListener('load', runBootSequence);
+
+        // Command Input Handler
+        const commandInput = document.getElementById('commandInput');
+
+        commandInput.addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const command = commandInput.value.trim();
+                if (!command) return;
+
+                // Echo the command to terminal
+                printLine(`root@orchestrator:~$ ${command}`, 'prompt');
+                commandInput.value = '';
+                commandInput.disabled = true;
+
+                try {
+                    const response = await fetch('/api/command', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ command })
+                    });
+
+                    const data = await response.json();
+
+                    // Handle multi-line responses
+                    const lines = data.response.split('\n');
+                    lines.forEach(line => {
+                        const lineClass = line.includes('✅') ? 'success' :
+                            line.includes('❌') || line.includes('CRITICAL') ? 'error' :
+                                line.includes('⚠️') ? 'warning' : '';
+                        printLine(line, lineClass);
+                    });
+                } catch (error) {
+                    printLine('[CRITICAL: SIGNAL LOST] - Failed to execute command', 'error');
+                }
+
+                commandInput.disabled = false;
+                commandInput.focus();
+            }
+        });
+
+        // Auto-focus on terminal click
+        document.querySelector('.terminal-container').addEventListener('click', () => {
+            commandInput.focus();
+        });
+    </script>
+</body>
+
+</html>
