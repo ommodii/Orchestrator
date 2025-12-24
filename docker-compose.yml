@@ -1,0 +1,38 @@
+services:
+  backend:
+    build: .
+    ports:
+      - "${APP_PORT}:9000"
+    environment:
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_PORT=${DB_PORT}
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - db
+  db:
+    image: postgres:18-alpine
+    container_name: orchestrator_db
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  dashboard:
+    image: adminer
+    container_name: orchestrator_ui
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+
+volumes:
+  db_data:
